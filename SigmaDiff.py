@@ -4,27 +4,33 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 Project: SigmaDiff.py
-Date: 2022/05/14
+Date: 2022/05/xx
 Author: frack113
-Version: 0.0.1
+Version: 0.6.0
 Description: 
     know the rules that have changed between 2 directories
 Requirements:
     python :)
 Tudo:
-    -   all    
+    - diff file
+    - correct html ouput
+Done:
+    - load Sigma file
+    - progress bar load file
+    - store correct string in db
 """
 
 import argparse
 import pathlib
 import sqlite3
 from sqlite3 import Error
-import hashlib
 import base64
 import ruamel.yaml
 import csv
+import difflib
+from tqdm import tqdm
 
-# Need to be clean
+# Do the sqlite jod
 class Sql:
     def __init__(self, where):
         self.dbConnection = self.createConnection(where)
@@ -105,7 +111,6 @@ class Sigma:
             "uuid": "",
             "name": "",
             "path": "",
-            "file_crc": "",
             "title": "",
             "status": "",
             "date": "",
@@ -118,6 +123,7 @@ class Sigma:
             "falsepositives": "",
             "level": "",
             "tags": "",
+            "file_data": "",
         }
         self.sigma_keys = self.sigma.keys()  # run once use many
 
@@ -125,69 +131,70 @@ class Sigma:
         for key in self.sigma_keys:
             self.sigma[key] = ""
 
+    def _to_b64_str_(self,data) -> str:
+        byte_64 = base64.b64encode(str(data).encode())
+        return byte_64.decode()
+
     def load_sigma_yml(self, sigma_yml, table_name):
         self.clean_sigma()
         path = sigma_yml.parent
+        with sigma_yml.open("r", encoding="UTF-8") as file:
+            self.sigma["file_data"] = self._to_b64_str_(file.read())
         with sigma_yml.open("r", encoding="UTF-8") as file:
             yml_dict = ruamel.yaml.load(file, Loader=ruamel.yaml.RoundTripLoader)
             self.sigma["uuid"] = yml_dict["id"]
             self.sigma["name"] = sigma_yml.name
             self.sigma["path"] = path
-            self.sigma["file_crc"] = hashlib.md5(str(yml_dict).encode()).hexdigest()
 
-            self.sigma["title"] = base64.b64encode(yml_dict["title"].encode())
+            self.sigma["title"] = self._to_b64_str_(yml_dict["title"])
             self.sigma["status"] = (
-                base64.b64encode(yml_dict["status"].encode())
+                self._to_b64_str_(yml_dict["status"])
                 if "status" in yml_dict
                 else "-"
             )
             self.sigma["author"] = (
-                base64.b64encode(yml_dict["author"].encode())
+                self._to_b64_str_(yml_dict["author"])
                 if "author" in yml_dict
                 else "-"
             )
             self.sigma["description"] = (
-                base64.b64encode(yml_dict["description"].encode())
+                self._to_b64_str_(yml_dict["description"])
                 if "description" in yml_dict
                 else "-"
             )
             self.sigma["reference"] = (
-                base64.b64encode(str(yml_dict["references"]).encode())
+                self._to_b64_str_(yml_dict["references"])
                 if "references" in yml_dict
                 else "-"
             )
             self.sigma["date"] = (
-                base64.b64encode(str(yml_dict["date"]).encode())
+                self._to_b64_str_(yml_dict["date"])
                 if "date" in yml_dict
                 else "-"
             )
             self.sigma["modified"] = (
-                base64.b64encode(str(yml_dict["modified"]).encode())
+                self._to_b64_str_(yml_dict["modified"])
                 if "modified" in yml_dict
                 else "-"
             )
             self.sigma["falsepositives"] = (
-                base64.b64encode(str(yml_dict["falsepositives"]).encode())
+                self._to_b64_str_(yml_dict["falsepositives"])
                 if "falsepositives" in yml_dict
                 else "-"
             )
             self.sigma["level"] = (
-                base64.b64encode(yml_dict["level"].encode())
+                self._to_b64_str_(yml_dict["level"])
                 if "level" in yml_dict
                 else "-"
             )
             self.sigma["tags"] = (
-                base64.b64encode(str(yml_dict["tags"]).encode())
+                self._to_b64_str_(yml_dict["tags"])
                 if "tags" in yml_dict
                 else "-"
             )
 
-            self.sigma["logsource"] = base64.b64encode(
-                str(yml_dict["logsource"]).encode()
-            )
-            self.sigma["detection"] = base64.b64encode(
-                str(yml_dict["detection"]).encode()
-            )
+            self.sigma["logsource"] = self._to_b64_str_(yml_dict["logsource"])
+            self.sigma["detection"] = self._to_b64_str_(yml_dict["detection"])
 
             self.Bdd.add_dico(table_name, self.sigma)
 
@@ -195,10 +202,21 @@ class Sigma:
         self.Bdd.create_table(table_name, self.sigma, unique=["uuid"], drop=True)
 
         sigma_list = [yml for yml in pathlib.Path(folder_name).glob("**/*.yml")]
-        print(f"Find {len(sigma_list)} file(s)")
+        pbar = tqdm(total=len(sigma_list), desc=f"Loading {folder_name}")
         for sigma_file in sigma_list:
             self.load_sigma_yml(sigma_file, table_name)
+            pbar.update(1)
+        pbar.close()
 
+    def get_diff_id(self,uuid) -> str:
+        ret = Bdd.query(f'SELECT file_data FROM old WHERE uuid="{uuid}"')
+        ret_b64 = ret[0]['file_data'] if len(ret)>0 else ""
+        file_old = base64.b64decode(ret_b64).decode()
+        ret = Bdd.query(f'SELECT file_data FROM new WHERE uuid="{uuid}"')
+        ret_b64 = ret[0]['file_data'] if len(ret)>0 else ""
+        file_new = base64.b64decode(ret_b64).decode()
+        diff = difflib.HtmlDiff().make_table(file_old.splitlines(), file_new.splitlines(),context=True)
+        return diff
 
 # todo
 class Result:
@@ -256,7 +274,7 @@ class Result:
             )
             data_old = ret_old[0]
             diff_check = {
-                "update_file": "file_crc",
+                "update_file": "file_data",
                 "update_title": "title",
                 "update_status": "status",
                 "update_date": "date",
@@ -325,7 +343,7 @@ print(
             __/ |                                 
            |___/                                  
 
-Beta 0.5 :)
+Beta 0.6 :)
 """
 )
 
@@ -336,26 +354,21 @@ parser.add_argument(
 parser.add_argument(
     "-n", "--new", help="Up to date Sigma Rules folder", type=str, required=True
 )
-parser.add_argument(
-    "-d", "--debug", help="Save database", action='store_true'
-)
+parser.add_argument("-d", "--debug", help="Save database", action="store_true")
 args = parser.parse_args()
 
-if args.debug :
+if args.debug:
     Bdd = Sql("SigmaDiff.db")
 else:
     Bdd = Sql(":memory:")
 
 sigma_bdd = Sigma(Bdd)
 
-
-print(f"Check folder : {args.old}")
+# Load Sigma files
 sigma_bdd.load_sigma_folder(args.old, "old")
-
-print(f"Check folder : {args.new}")
 sigma_bdd.load_sigma_folder(args.new, "new")
 
-print("Create the diff table")
+print("Calcul the diff table")
 result_bdd = Result(Bdd, "old", "new")
 
 result_bdd.check_old()
@@ -364,20 +377,50 @@ result_bdd.check_new()
 
 result_bdd.export_csv("SigmaDiff.csv")
 
-print("------------------------------------------")
-print("|           Some statistique             |")
-print("------------------------------------------")
-print(f"Rules remove : {result_bdd.get_nb('file_remove','Y')}")
-print(f"Rules add : {result_bdd.get_nb('file_new','Y')}")
-print(f"Rules rename : {result_bdd.get_nb('file_rename','Y')}")
-print("------------------------------------------")
-print("|           More information             |")
-print("------------------------------------------")
-print(f"Rules update : {result_bdd.get_nb('update_file','Y')}")
-print(f"logsource change : {result_bdd.get_nb('update_logsource','Y')}")
-print(f"detection change : {result_bdd.get_nb('update_detection','Y')}")
-print(f"level change : {result_bdd.get_nb('update_level','Y')}")
-print("------------------------------------------")
-print("Check SigmaDiff.csv for more details")
+mega_str="""
+<html>
+<head>
+    <meta http-equiv="Content-Type"
+          content="text/html; charset=utf-8" />
+    <title></title>
+    <style type="text/css">
+        table.diff {font-family:Courier; border:medium;}
+        .diff_header {background-color:#e0e0e0}
+        td.diff_header {text-align:right}
+        .diff_next {background-color:#c0c0c0}
+        .diff_add {background-color:#aaffaa}
+        .diff_chg {background-color:#ffff77}
+        .diff_sub {background-color:#ffaaaa}
+    </style>
+</head>
+<body>
+"""
+
+mega_str += f"""
+<table>
+<tr><th>Information</th><th></th></tr>
+<tr><th>Rules remove</th><th>{result_bdd.get_nb('file_remove','Y')}</th></tr>
+<tr><th>Rules add</th><th></th>{result_bdd.get_nb('file_new','Y')}</tr>
+<tr><th>Rules rename</th><th>{result_bdd.get_nb('file_rename','Y')}</th></tr>
+<tr><th>Rules update</th><th>{result_bdd.get_nb('update_file','Y')}</th></tr>
+<tr><th>logsource change</th><th>{result_bdd.get_nb('update_logsource','Y')}</th></tr>
+<tr><th>detection change</th><th>{result_bdd.get_nb('update_detection','Y')}</th></tr>
+<tr><th>level change</th><th>{result_bdd.get_nb('update_level','Y')}</th></tr>
+</table>
+<BR>
+"""
+
+
+list_uuid = Bdd.query('SELECT DISTINCT uuid,new_name FROM result WHERE update_logsource ="Y" OR update_logsource= "Y" OR update_level="Y";')
+if len(list_uuid)>0:
+    for uuid_dict in list_uuid:
+        mega_str += f'File : {uuid_dict["new_name"]}<BR>'
+        mega_str += sigma_bdd.get_diff_id(uuid_dict['uuid'])
+        mega_str += "<BR>"
+
+mega_str += "</body></html>"
+with pathlib.Path('SigmaDiff.html').open('w',encoding='UTF-8') as file:
+    file.write(mega_str)
 
 Bdd.close()
+print("Check SigmaDiff.csv or SigmaDiff.html for more details")
