@@ -1,0 +1,75 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type"
+          content="text/html; charset=utf-8" />
+    <title></title>
+    <style type="text/css">
+        table.diff {font-family:Courier; border:medium;}
+        .diff_header {background-color:#e0e0e0}
+        td.diff_header {text-align:right}
+        .diff_next {background-color:#c0c0c0}
+        .diff_add {background-color:#aaffaa}
+        .diff_chg {background-color:#ffff77}
+        .diff_sub {background-color:#ffaaaa}
+    </style>
+</head>
+<body>
+<img src="SigmaDiff.png" alt="Making the Diff easier">
+
+<H1>SigmaDiff</H1>
+
+<H2>Statistique</H2>
+<table>
+    <thead>
+        <tr><th>Quategorie</th><th>nb</th>
+        </tr>
+    </thead>
+    {% for name, value in data['stat'].items() %}
+    <tbody>
+        <td>{{ name }}</td><td>{{ value }}</td>
+    </tbody>
+    {% endfor %}
+</table>
+<H2> Rule remove </H2>
+<table>
+    <thead>
+        <tr><th>Name</th><th>Id</th></tr>
+    </thead>
+    {% for row in data['remove'] %}
+    <tbody>
+        <td>{{ row['old_name'] }}</td><td>{{ row['uuid'] }}</td>
+    </tbody>
+    {% endfor %}
+</table>
+<H2> Rule rename </H2>
+<table>
+    <thead>
+        <tr><th>Name</th><th>New Name</th><th>Id</th></tr>
+    </thead>
+    {% for row in data['rename'] %}
+    <tbody>
+        <td>{{ row['old_name'] }}</td><td>{{ row['new_name'] }}</td><td>{{ row['uuid'] }}</td>
+    </tbody>
+    {% endfor %}
+</table>
+<H2> Rule added </H2>
+<table>
+    <thead>
+        <tr><th>Name</th><th>Id</th></tr>
+    </thead>
+    {% for row in data['added'] %}
+    <tbody>
+        <td>{{ row['new_name'] }}</td><td>{{ row['uuid'] }}</td>
+    </tbody>
+    {% endfor %}
+</table>
+
+<H2> Rule important change </H2>
+    {% for row in data['change'] %}
+      <H3>{{ row['name'] }}</H3>
+      id : {{ row['id'] }}
+      {{ row['diff'] }}
+    {% endfor %}
+
+</body>
+</html>

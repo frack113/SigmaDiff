@@ -1,9 +1,18 @@
 # SigmaDiff
 know the rules that have changed between 2 Sigma rules folder
 
+## the purpose
+
+
+## Use
 ![SigmaDiff 0.5](SigmaDiff.gif "In action")
 
-# Csv output:
+I tried to keep it as simple as possible :
+Sigmadiff 
+
+## Html output
+
+## Csv output
 
 * file
   * delete
