@@ -4,9 +4,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 Project: SigmaDiff.py
-Date: 2022/05/21
+Date: 2022/05/27
 Author: frack113
-Version: 0.6.5
+Version: 0.7.0
 Description: 
     know the rules that have changed between 2 directories
 Requirements:
@@ -361,7 +361,7 @@ print(
             __/ |                                 
            |___/                                  
 
-Beta 0.6 :)
+Beta 0.7 :)
 """
 )
 
@@ -409,7 +409,7 @@ data["change"] = change
 
 loader = jinja2.FileSystemLoader(searchpath="./templates")
 jenv = jinja2.Environment(loader=loader)
-template = jenv.get_template("SigmaDiff.txt")
+template = jenv.get_template("SigmaDiff.template")
 htmlout = template.render(data=data)
 
 with pathlib.Path("SigmaDiff.html").open("w", encoding="UTF-8") as file:

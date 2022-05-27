@@ -2,7 +2,8 @@
 <head>
     <meta http-equiv="Content-Type"
           content="text/html; charset=utf-8" />
-    <title></title>
+    <title>SigmaDiff</title>
+    <link rel="stylesheet" href="SigmaDiff.css">
     <style type="text/css">
         table.diff {font-family:Courier; border:medium;}
         .diff_header {background-color:#e0e0e0}
@@ -16,57 +17,54 @@
 <body>
 <img src="SigmaDiff.png" alt="Making the Diff easier">
 
-<H1>SigmaDiff</H1>
-
-<H2>Statistique</H2>
-<table>
+<H1>Statistique</H1>
+<table class="paleBlueRows">
     <thead>
-        <tr><th>Quategorie</th><th>nb</th>
-        </tr>
+        <tr><th>Quategorie</th><th>nb</th></tr>
     </thead>
-    {% for name, value in data['stat'].items() %}
     <tbody>
-        <td>{{ name }}</td><td>{{ value }}</td>
-    </tbody>
+    {% for name, value in data['stat'].items() %}
+        <tr><td>{{ name }}</td><td>{{ value }}</td></tr>
     {% endfor %}
+    </tbody>
 </table>
-<H2> Rule remove </H2>
-<table>
+<H1> Rule remove </H1>
+<table class="paleBlueRows">
     <thead>
         <tr><th>Name</th><th>Id</th></tr>
     </thead>
-    {% for row in data['remove'] %}
     <tbody>
-        <td>{{ row['old_name'] }}</td><td>{{ row['uuid'] }}</td>
-    </tbody>
+    {% for row in data['remove'] %}
+        <tr><td>{{ row['old_name'] }}</td><td>{{ row['uuid'] }}</td></tr>
     {% endfor %}
+    </tbody>
 </table>
-<H2> Rule rename </H2>
-<table>
+<H1> Rule rename </H1>
+<table class="paleBlueRows">
     <thead>
         <tr><th>Name</th><th>New Name</th><th>Id</th></tr>
     </thead>
-    {% for row in data['rename'] %}
     <tbody>
-        <td>{{ row['old_name'] }}</td><td>{{ row['new_name'] }}</td><td>{{ row['uuid'] }}</td>
-    </tbody>
+    {% for row in data['rename'] %}
+        <tr><td>{{ row['old_name'] }}</td><td>{{ row['new_name'] }}</td><td>{{ row['uuid'] }}</td></tr>
     {% endfor %}
+    </tbody>
 </table>
-<H2> Rule added </H2>
-<table>
+<H1> Rule added </H1>
+<table class="paleBlueRows">
     <thead>
         <tr><th>Name</th><th>Id</th></tr>
     </thead>
+    <tbody>    
     {% for row in data['added'] %}
-    <tbody>
-        <td>{{ row['new_name'] }}</td><td>{{ row['uuid'] }}</td>
-    </tbody>
+        <tr><td>{{ row['new_name'] }}</td><td>{{ row['uuid'] }}</td></tr>
     {% endfor %}
+    </tbody>    
 </table>
 
-<H2> Rule important change </H2>
+<H1> Rule important change </H1>
     {% for row in data['change'] %}
-      <H3>{{ row['name'] }}</H3>
+      <H2>{{ row['name'] }}</H2>
       id : {{ row['id'] }}
       {{ row['diff'] }}
     {% endfor %}
